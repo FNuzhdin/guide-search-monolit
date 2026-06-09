@@ -7,8 +7,8 @@
 ### Клонирование репозитория
 
 ```bash
-git clone <url-репозитория>
-cd guide-search
+git clone https://github.com/FNuzhdin/guide-search-monolit.git
+cd guide-search-monolit
 ```
 
 ### Установка зависимостей
