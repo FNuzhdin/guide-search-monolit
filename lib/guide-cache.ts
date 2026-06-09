@@ -56,3 +56,16 @@ export async function getUniqueCategories(): Promise<string[]> {
   console.log('Unique categories count:', categories.length);
   return categories.sort();
 }
+
+export async function getCategoriesByCalculator(calculator: string): Promise<string[]> {
+  if (!calculator) return [];
+  const data = await getGuideData();
+  const categories = [...new Set(
+    data
+      .filter(item => item.calculator === calculator)
+      .map(item => item.category)
+      .filter(Boolean)
+  )];
+  console.log(`Categories for ${calculator}: ${categories.length}`);
+  return categories.sort();
+}
