@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GuideItem, ApiResponse } from '@/types/guide';
-
-export const revalidate = 3600;
-
-const API_BASE = process.env.API_BASE || 'https://test.monolit-calculator.ru';
+import { getGuideData } from '@/lib/guide-cache';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -11,34 +7,24 @@ export async function GET(request: NextRequest) {
   const calculator = searchParams.get('calculator') || '';
   const category = searchParams.get('category') || '';
 
-  // Используем абсолютный URL
-  const res = await fetch(`${API_BASE}/api/adminka/guide`, {
-    next: { revalidate: 3600 },
-  });
-  
-  const json: ApiResponse = await res.json();
-  
-  if (!json.success) {
-    return NextResponse.json({ error: 'Failed to load guide' }, { status: 500 });
-  }
+  try {
+    const allItems = await getGuideData();
 
-  let items = json.data;
+    let filtered = allItems;
+    if (calculator) filtered = filtered.filter(item => item.calculator === calculator);
+    if (category) filtered = filtered.filter(item => item.category === category);
+    if (search) {
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(search) ||
+        item.name_in_bitrix?.toLowerCase().includes(search) ||
+        item.category?.toLowerCase().includes(search)
+      );
+    }
 
-  if (calculator) {
-    items = items.filter(item => item.calculator === calculator);
+    const limited = filtered.slice(0, 100);
+    return NextResponse.json({ success: true, data: limited });
+  } catch (error) {
+    console.error('Search error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-  if (category) {
-    items = items.filter(item => item.category === category);
-  }
-  if (search) {
-    items = items.filter(item =>
-      item.name.toLowerCase().includes(search) ||
-      item.name_in_bitrix?.toLowerCase().includes(search) ||
-      item.category?.toLowerCase().includes(search)
-    );
-  }
-
-  const limited = items.slice(0, 100);
-  
-  return NextResponse.json({ success: true, data: limited });
 }
