@@ -3,6 +3,7 @@
 import { useSearch } from '@/hooks/useSearch';
 import { SearchInput } from '@/components/search/SearchInput';
 import { FilterPanel } from '@/components/search/FilterPanel';
+import { LimitSelector } from '@/components/search/LimitSelector';
 import { ProductList } from '@/components/products/ProductList';
 import { Separator } from '@/components/ui/separator';
 
@@ -16,6 +17,8 @@ export default function HomePage() {
     setSelectedCategory,
     results,
     total,
+    limit,
+    setLimit,
     loading,
     calculators,
     categories,
@@ -41,17 +44,20 @@ export default function HomePage() {
       
       <Separator />
       
-      <div className="text-sm text-muted-foreground">
-        {loading ? (
-          'Загрузка...'
-        ) : total > 0 ? (
-          <>
-            Найдено: {total} материалов
-            {total > results.length && ` (показаны первые ${results.length})`}
-          </>
-        ) : (
-          'Ничего не найдено'
-        )}
+      <div className="flex justify-between items-center">
+        <div className="text-sm text-muted-foreground">
+          {loading ? (
+            'Загрузка...'
+          ) : total > 0 ? (
+            <>
+              Найдено: {total} материалов
+              {total > results.length && ` (показаны ${results.length} из ${total})`}
+            </>
+          ) : (
+            'Ничего не найдено'
+          )}
+        </div>
+        <LimitSelector limit={limit} onLimitChange={setLimit} />
       </div>
       
       <ProductList items={results} loading={loading} />
