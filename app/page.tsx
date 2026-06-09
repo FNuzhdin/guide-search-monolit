@@ -18,6 +18,7 @@ export default function HomePage() {
     loading,
     calculators,
     categories,
+    categoriesLoading,
   } = useSearch();
 
   return (
@@ -29,6 +30,7 @@ export default function HomePage() {
         <FilterPanel
           calculators={calculators}
           categories={categories}
+          categoriesLoading={categoriesLoading}
           selectedCalculator={selectedCalculator}
           selectedCategory={selectedCategory}
           onCalculatorChange={setSelectedCalculator}
