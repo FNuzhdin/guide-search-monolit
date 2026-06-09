@@ -1,36 +1,128 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Поиск по справочнику строительных материалов
 
-## Getting Started
+---
 
-First, run the development server:
+## 📦 Использование
+
+### Клонирование репозитория
+
+```bash
+git clone <url-репозитория>
+cd guide-search
+```
+
+### Установка зависимостей
+
+```bash
+npm install
+```
+
+### Настройка окружения
+
+Создайте файл `.env.local` в корне проекта:
+
+```env
+API_BASE=https://test.monolit-calculator.ru
+```
+
+### Запуск в режиме разработки
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Приложение будет доступно по адресу `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Сборка для production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## ⚙️ Технический раздел
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Используемые эндпоинты Monolit API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Эндпоинт | Назначение |
+|---|---|
+| `/api/adminka/guide` | Получение полного справочника материалов (7846 записей). Содержит информацию о товарах: название, категория, калькулятор, единицы измерения, вес, объём, ID в Bitrix и др. |
 
-## Deploy on Vercel
+> **Примечание:** Данные кэшируются на сервере приложения, поэтому повторные запросы к внешнему API не выполняются до истечения времени жизни кэша.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Собственные API эндпоинты приложения
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Все эндпоинты находятся в `app/api/` и используют серверный кэш.
+
+| Эндпоинт | Метод | Параметры | Описание |
+|---|---|---|---|
+| `/api/search` | `GET` | `search`, `calculator`, `category`, `limit` | Поиск и фильтрация материалов. Возвращает `{ success, data, total, limit }`. `data` — массив до `limit` записей (по умолчанию 100, макс. 100, мин. 10, шаг 10). `total` — общее количество подходящих записей. |
+| `/api/search/metadata` | `GET` | — | Возвращает список уникальных калькуляторов (левое выпадающее меню). |
+| `/api/search/categories` | `GET` | `calculator` | Возвращает список уникальных категорий для выбранного калькулятора (правое выпадающее меню). |
+
+### Кэширование данных
+
+Для избежания повторных загрузок большого объёма данных (7846 записей, ~9 МБ) и для обхода ограничения Next.js на кэширование ответов >2 МБ реализовано ручное кэширование в памяти сервера:
+
+- Модуль `lib/guide-cache.ts` загружает данные из Monolit API при первом обращении.
+- Данные хранятся в переменной `cachedData` и переиспользуются для всех последующих запросов.
+- Время жизни кэша (TTL) — 1 час (`CACHE_TTL = 60 * 60 * 1000`).
+- При истечении TTL или при отсутствии кэша выполняется фоновая загрузка свежих данных (при следующем запросе).
+- Функции `getGuideData()`, `getUniqueCalculators()`, `getUniqueCategories()` используют этот кэш.
+
+> **Почему не `revalidate`?**
+> Стандартный механизм `fetch(..., { next: { revalidate } })` пытается сохранить ответ в файловый кэш. Из-за размера ответа (>9 МБ) возникает ошибка `items over 2MB can not be cached`. Поэтому реализован собственный кэш в памяти.
+
+### Проксирование запросов (CORS)
+
+В файле `next.config.ts` настроены `rewrites`, которые проксируют все запросы, начинающиеся с `/api`, на внешний Monolit API. Это решает проблему CORS при разработке и не требует изменения кода.
+
+```js
+async rewrites() {
+  return [
+    {
+      source: '/api/:path*',
+      destination: 'https://test.monolit-calculator.ru/api/:path*',
+    },
+  ];
+}
+```
+
+---
+
+## 🖥️ Использование клиентской части
+
+### Главный экран
+
+После запуска приложения открывается страница со следующими элементами:
+
+- **Поле поиска** — ввод текста для поиска материалов. Поиск происходит автоматически с задержкой (debounce 300 мс) после окончания ввода. Ищет по полям `name`, `name_in_bitrix`, `category`.
+
+- **Фильтр «Калькулятор»** — выпадающий список всех доступных калькуляторов (например, «Газобетон и кирпич», «Бетон», «Нерудные материалы»). При выборе калькулятора:
+  - загружается список категорий для этого калькулятора;
+  - правый фильтр «Категория» становится активным;
+  - автоматически сбрасывается ранее выбранная категория.
+
+- **Фильтр «Категория»** — выпадающий список, доступный только после выбора калькулятора. Показывает категории, относящиеся к выбранному калькулятору. При выборе категории список материалов обновляется.
+
+- **Селектор количества на странице** — позволяет выбрать, сколько материалов показывать одновременно (10, 20, …, 100). При изменении значения таблица результатов обновляется.
+
+- **Счётчик результатов** — показывает общее количество найденных материалов (без учёта лимита) и, если лимит меньше общего числа, дополнительно указывает, сколько отображается в данный момент.
+
+- **Список карточек материалов** — каждая карточка содержит:
+  - название материала;
+  - теги: калькулятор, категория, единица измерения;
+  - вес (если указан) и объём (если указан);
+  - ID справочника (`guide_id`).
+
+### Поведение при загрузке
+
+- Первоначальная загрузка справочника может занять несколько секунд — в это время отображаются скелетоны (серые блоки) в области карточек.
+- При смене фильтров или поиска появляется индикатор загрузки, а старые результаты заменяются скелетонами.
+
+### Обработка ошибок
+
+- Если API возвращает ошибку или данные отсутствуют, отображается сообщение «Ничего не найдено».
+- При проблемах с сетью или сервером ошибка логируется в консоль, пользователь видит пустой список.
