@@ -7,6 +7,7 @@ export function useSearch() {
   const [selectedCalculator, setSelectedCalculator] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [results, setResults] = useState<GuideItem[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [calculators, setCalculators] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -27,12 +28,15 @@ export function useSearch() {
       const json = await res.json();
       if (json.success) {
         setResults(json.data);
+        setTotal(json.total);
       } else {
         setResults([]);
+        setTotal(0);
       }
     } catch (err) {
       console.error(err);
       setResults([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
@@ -59,7 +63,7 @@ export function useSearch() {
     const fetchCategories = async () => {
       if (!selectedCalculator) {
         setCategories([]);
-        setSelectedCategory(''); // сбросить выбранную категорию
+        setSelectedCategory('');
         return;
       }
       setCategoriesLoading(true);
@@ -71,7 +75,6 @@ export function useSearch() {
         } else {
           setCategories([]);
         }
-        // Сбросить выбранную категорию при смене калькулятора
         setSelectedCategory('');
       } catch (err) {
         console.error('Categories fetch failed:', err);
@@ -96,6 +99,7 @@ export function useSearch() {
     selectedCategory,
     setSelectedCategory,
     results,
+    total,
     loading,
     calculators,
     categories,

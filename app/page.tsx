@@ -15,6 +15,7 @@ export default function HomePage() {
     selectedCategory,
     setSelectedCategory,
     results,
+    total,
     loading,
     calculators,
     categories,
@@ -41,7 +42,16 @@ export default function HomePage() {
       <Separator />
       
       <div className="text-sm text-muted-foreground">
-        Найдено: {results.length} материалов
+        {loading ? (
+          'Загрузка...'
+        ) : total > 0 ? (
+          <>
+            Найдено: {total} материалов
+            {total > results.length && ` (показаны первые ${results.length})`}
+          </>
+        ) : (
+          'Ничего не найдено'
+        )}
       </div>
       
       <ProductList items={results} loading={loading} />
