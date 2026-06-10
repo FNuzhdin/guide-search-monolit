@@ -32,7 +32,7 @@ export default function HomePage() {
 
   return (
     <main className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">📚 Справочник материалов</h1>
+      <h1 className="text-3xl font-bold text-center">Справочник материалов</h1>
 
       <div className="space-y-4">
         <SearchInput value={searchTerm} onChange={setSearchTerm} />
