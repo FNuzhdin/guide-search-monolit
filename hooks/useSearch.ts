@@ -3,6 +3,8 @@ import { GuideItem } from '@/types/guide';
 import { useDebounce } from './useDebounce';
 
 export function useSearch() {
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
     const [limit, setLimit] = useState(100);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCalculator, setSelectedCalculator] = useState('');
@@ -23,7 +25,8 @@ export function useSearch() {
             if (debouncedSearch) params.append('search', debouncedSearch);
             if (selectedCalculator) params.append('calculator', selectedCalculator);
             if (selectedCategory) params.append('category', selectedCategory);
-            params.append('limit', limit.toString());  // ← добавить
+            params.append('limit', limit.toString());  
+            params.append('page', page.toString());
 
             const res = await fetch(`/api/search?${params.toString()}`);
             if (!res.ok) throw new Error('Network error');
@@ -31,6 +34,7 @@ export function useSearch() {
             if (json.success) {
                 setResults(json.data);
                 setTotal(json.total);
+                setTotalPages(json.totalPages);
             } else {
                 setResults([]);
                 setTotal(0);
@@ -42,7 +46,7 @@ export function useSearch() {
         } finally {
             setLoading(false);
         }
-    }, [debouncedSearch, selectedCalculator, selectedCategory, limit]);
+    }, [debouncedSearch, selectedCalculator, selectedCategory, limit, page]);
 
     // Загрузка метаданных (калькуляторов) – один раз
     useEffect(() => {
@@ -93,6 +97,11 @@ export function useSearch() {
         fetchResults();
     }, [fetchResults]);
 
+    // При изменении параметров сбрасываем страницу до 1
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm, selectedCalculator, selectedCategory, limit]);
+
     return {
         searchTerm,
         setSearchTerm,
@@ -107,6 +116,9 @@ export function useSearch() {
         categories,
         categoriesLoading,
         limit,
-        setLimit
+        setLimit,
+        page,
+        setPage,
+        totalPages,
     };
 }
