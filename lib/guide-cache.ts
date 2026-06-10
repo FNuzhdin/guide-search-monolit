@@ -47,14 +47,14 @@ export async function getUniqueCalculators(): Promise<string[]> {
   const data = await getGuideData();
   const calculators = [...new Set(data.map(item => item.calculator).filter(Boolean))];
   console.log('Unique calculators count:', calculators.length);
-  return calculators.sort();
+  return calculators.sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
 export async function getUniqueCategories(): Promise<string[]> {
   const data = await getGuideData();
   const categories = [...new Set(data.map(item => item.category).filter(Boolean))];
   console.log('Unique categories count:', categories.length);
-  return categories.sort();
+  return categories.sort((a, b) => a.localeCompare(b, 'ru'));
 }
 
 export async function getCategoriesByCalculator(calculator: string): Promise<string[]> {
@@ -67,5 +67,5 @@ export async function getCategoriesByCalculator(calculator: string): Promise<str
       .filter(Boolean)
   )];
   console.log(`Categories for ${calculator}: ${categories.length}`);
-  return categories.sort();
+  return categories.sort((a, b) => a.localeCompare(b, 'ru'));
 }
