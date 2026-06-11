@@ -42,7 +42,7 @@ export function FilterPanel({
     return (
         <div className="flex gap-4">
             <Select value={selectedCalculator || 'all'} onValueChange={(val) => onCalculatorChange(val === 'all' ? '' : val)}>
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[350px]">
                     <SelectValue placeholder="Все калькуляторы" />
                 </SelectTrigger>
                 <SelectContent>
@@ -58,7 +58,7 @@ export function FilterPanel({
                 onValueChange={(val) => onCategoryChange(val === 'all' ? '' : val)}
                 disabled={!selectedCalculator || categoriesLoading}
             >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[400px]">
                     <SelectValue placeholder="Все категории" />
                 </SelectTrigger>
                 <SelectContent>
