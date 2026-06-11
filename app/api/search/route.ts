@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search')?.toLowerCase() || '';
   const calculator = searchParams.get('calculator') || '';
   const category = searchParams.get('category') || '';
-  
+
   let limit = parseInt(searchParams.get('limit') || '100');
   if (isNaN(limit) || limit < 10) limit = 10;
   if (limit > 100) limit = 100;
@@ -23,11 +23,22 @@ export async function GET(request: NextRequest) {
     if (calculator) filtered = filtered.filter(item => item.calculator === calculator);
     if (category) filtered = filtered.filter(item => item.category === category);
     if (search) {
-      filtered = filtered.filter(item =>
-        item.name.toLowerCase().includes(search) ||
-        item.name_in_bitrix?.toLowerCase().includes(search) ||
-        item.category?.toLowerCase().includes(search)
-      );
+      const searchLower = search.toLowerCase();
+      const isNumeric = /^\d+$/.test(searchLower);
+      const searchId = isNumeric ? parseInt(searchLower, 10) : null;
+
+      filtered = filtered.filter(item => {
+        // Поиск по текстовым полям (всегда)
+        const matchesText =
+          item.name.toLowerCase().includes(searchLower) ||
+          item.name_in_bitrix?.toLowerCase().includes(searchLower) ||
+          item.category?.toLowerCase().includes(searchLower);
+
+        // Если запрос — число, добавляем точное совпадение по guide_id
+        const matchesId = isNumeric ? (item.guide_id === searchId) : false;
+
+        return matchesText || matchesId;
+      });
     }
 
     const total = filtered.length;
