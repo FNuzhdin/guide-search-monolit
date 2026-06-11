@@ -7,7 +7,6 @@ export async function GET() {
       getUniqueCalculators(),
       getUniqueCategories(),
     ]);
-    console.log('Returning metadata:', { calculatorsCount: calculators.length, categoriesCount: categories.length });
     return NextResponse.json({ success: true, calculators, categories });
   } catch (error) {
     console.error('Metadata error:', error);
