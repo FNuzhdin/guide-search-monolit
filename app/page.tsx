@@ -1,5 +1,6 @@
 'use client';
 
+import { ErrorAlert } from '@/components/common/ErrorAlert';
 import { Pagination } from '@/components/common/Pagination';
 import { Loader2 } from 'lucide-react';
 import { useSearch } from '@/hooks/useSearch';
@@ -27,8 +28,14 @@ export default function HomePage() {
     categoriesLoading,
     page,
     setPage,
-    totalPages
+    totalPages,
+    error,
+    fetchResults
   } = useSearch();
+
+  const handleRetry = () => {
+    fetchResults();
+  }
 
   return (
     <main className="container mx-auto p-6 space-y-6">
@@ -49,24 +56,30 @@ export default function HomePage() {
 
       <Separator />
 
-      <div className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              <span>Загрузка...</span>
+      {error ? (
+        <ErrorAlert message={error} onRetry={handleRetry} />
+      ) : (
+        <>
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-muted-foreground">
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <span>Загрузка...</span>
+                </div>
+              ) : total > 0 ? (
+                <>
+                  Найдено: {total} материалов
+                  {total > results.length}
+                </>
+              ) : (
+                'Ничего не найдено'
+              )}
             </div>
-          ) : total > 0 ? (
-            <>
-              Найдено: {total} материалов
-              {total > results.length}
-            </>
-          ) : (
-            'Ничего не найдено'
-          )}
-        </div>
-        <LimitSelector limit={limit} onLimitChange={setLimit} />
-      </div>
+            <LimitSelector limit={limit} onLimitChange={setLimit} />
+          </div>
+        </>
+      )}
 
       <ProductList items={results} loading={loading} />
       <Pagination currentPage={page} totalPages={totalPages} onPageChange={setPage} />

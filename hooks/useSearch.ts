@@ -3,6 +3,7 @@ import { GuideItem } from '@/types/guide';
 import { useDebounce } from './useDebounce';
 
 export function useSearch() {
+    const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [limit, setLimit] = useState(100);
@@ -20,16 +21,20 @@ export function useSearch() {
 
     const fetchResults = useCallback(async () => {
         setLoading(true);
+        setError(null)
         try {
             const params = new URLSearchParams();
             if (debouncedSearch) params.append('search', debouncedSearch);
             if (selectedCalculator) params.append('calculator', selectedCalculator);
             if (selectedCategory) params.append('category', selectedCategory);
-            params.append('limit', limit.toString());  
+            params.append('limit', limit.toString());
             params.append('page', page.toString());
 
             const res = await fetch(`/api/search?${params.toString()}`);
-            if (!res.ok) throw new Error('Network error');
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || `HTTP ${res.status}`);
+            }
             const json = await res.json();
             if (json.success) {
                 setResults(json.data);
@@ -38,11 +43,15 @@ export function useSearch() {
             } else {
                 setResults([]);
                 setTotal(0);
+                setTotalPages(1);
+                setError(json.error || 'Ошибка сервера')
             }
         } catch (err) {
             console.error(err);
             setResults([]);
             setTotal(0);
+            setTotalPages(1);
+            setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
         } finally {
             setLoading(false);
         }
@@ -120,5 +129,7 @@ export function useSearch() {
         page,
         setPage,
         totalPages,
+        error,
+        fetchResults
     };
 }
